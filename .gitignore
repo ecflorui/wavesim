@@ -1,0 +1,8 @@
+out/
+*.bin
+*.png
+*.gif
+wavesim
+test_cpu
+*.o
+__pycache__/
