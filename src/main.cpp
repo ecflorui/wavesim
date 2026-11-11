@@ -125,6 +125,7 @@ int main(int argc, char** argv) {
         write_meta(dir, cfg, solver->name());
         write_field(dir, field);
         write_timing(dir, init_ms, steps_ms, copy_ms);
+        std::printf("run_dir=%s\n", dir.c_str());
     } catch (const std::exception& e) {
         std::fprintf(stderr, "error: %s\n", e.what());
         return 1;
