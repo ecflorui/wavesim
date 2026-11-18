@@ -1,0 +1,22 @@
+Run: v3_g16_mcs9_classical
+1. Records found: 60;  complete (all 7 streams): 60
+   SHA-512 of every .sigmf-data matches its .sigmf-meta
+2. Payload BER overall: 0 / 67680 = 0.000e+00  (zero errors -> BER < 4.4e-05 at 95% conf.)
+   per-record BER: min 0.000e+00  max 0.000e+00
+3. Records decoded perfectly: 60 / 60
+4. frame/slot/RNTI mismatches: 0
+   frames 915..935, slots used [8, 9, 18, 19]
+5. Metadata distribution:
+   mcs_index              {'9': 60}  CONSTANT
+   modulation             {'qpsk': 60}  CONSTANT
+   qam_mod_order          {'2': 60}  CONSTANT
+   rb_size                {'6': 60}  CONSTANT
+   rb_start               {'0': 60}  CONSTANT
+   nr_of_symbols          {'13': 60}  CONSTANT
+   ul_dmrs_symb_pos       {'0,5,10': 60}  CONSTANT
+   number_of_bits         {'1128': 60}  CONSTANT
+   number_of_coded_bits   {'1656': 60}  CONSTANT
+   num_rx_antennas        {'1': 60}  CONSTANT
+   rnti                   {'47869': 60}  CONSTANT
+   receiver_type          {'classical_rx': 60}  CONSTANT
+   NOTE: metadata says payload_bit_pattern='zeros' but the payload bits are not all zero

@@ -17,3 +17,9 @@ make test-cpu            # CPU sanity checks
 
 `src/config.cpp`, `src/main.cpp`, `src/output.cpp`, `src/gpu_stub.cpp` are currently
 placeholder stubs so the CPU solver can build and run; their owners replace them.
+
+## SigMF capture analysis (OAI 5G uplink)
+
+`sigmf_analysis/` holds the offline Python pipeline for the OAI T-Tracer SigMF captures: loader, quality report,
+operating point, channel features, plots, Python reference receiver and training-data packer. Start with
+`sigmf_analysis/SigMF_walkthrough.ipynb`; the brief is `sigmf_analysis/docs/SigMF_Task_Brief.pdf`.

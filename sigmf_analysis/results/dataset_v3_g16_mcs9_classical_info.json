@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "n_samples": 60,
+  "grid": [
+    72,
+    13
+  ],
+  "runs": [
+    "v3_g16_mcs9_classical"
+  ],
+  "test_runs": [],
+  "n_train": 60,
+  "n_test": 0,
+  "normalized": true,
+  "skipped": [],
+  "input_channels": [
+    "rx_re",
+    "rx_im",
+    "ce_pilot_re",
+    "ce_pilot_im"
+  ]
+}

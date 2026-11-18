@@ -1,0 +1,33 @@
+60 records loaded
+
+record 0  complete=True  missing=[]
+  rx_grid     (72, 13)   complex64
+  ce_pilots   (72, 13)   complex64
+  ce_interp   (72, 13)   complex64
+  pilots      (72, 13)   complex64
+  tx_bits     (1128,)    uint8
+  rx_bits     (1128,)    uint8
+  tx_coded    (1656,)    uint8
+  data_mask   (72, 13)   bool
+  pilot_mask  (72, 13)   bool
+  frame                915
+  slot                 8
+  rnti                 47869
+  timestamp            2026_11_18T13:57:23.001
+  mcs_index            9
+  modulation           qpsk
+  qam_mod_order        2
+  rb_size              6
+  rb_start             0
+  nr_of_symbols        13
+  start_symbol         0
+  ul_dmrs_symb_pos     [0, 5, 10]
+  dmrs_config          5g nr type 1
+  num_rx_antennas      1
+  number_of_bits       1128
+  number_of_coded_bits 1656
+  receiver_type        classical_rx
+  cfg_channel_model    tdl_d
+  cfg_snr_db           20.0
+  cfg_speed_mps        5.0
+  cfg_delay_spread_s   5.0000000000000004e-08

@@ -1,0 +1,21 @@
+Run v3_g16_mcs9_classical  (60 records, 99360 coded bits, time interpolation = linear)
+  Python RX (raw CE + own interp)    coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 24.93 ± 0.26 dB
+  gNB interpolated CE                coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 20.80 ± 0.62 dB
+  genie smoothed channel             coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 26.55 ± 0.14 dB
+  NMSE  py vs gNB CE   -22.32 dB
+  NMSE  py vs genie    -29.94 dB
+  NMSE  gNB vs genie   -22.24 dB
+Run v3_g16_mcs9_classical  (60 records, 99360 coded bits, time interpolation = hold)
+  Python RX (raw CE + own interp)    coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 23.96 ± 0.24 dB
+  gNB interpolated CE                coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 20.80 ± 0.62 dB
+  genie smoothed channel             coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 26.55 ± 0.14 dB
+  NMSE  py vs gNB CE   -21.54 dB
+  NMSE  py vs genie    -27.40 dB
+  NMSE  gNB vs genie   -22.24 dB
+Run v3_g16_mcs9_classical  (60 records, 99360 coded bits, time interpolation = mean)
+  Python RX (raw CE + own interp)    coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 21.89 ± 0.24 dB
+  gNB interpolated CE                coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 20.80 ± 0.62 dB
+  genie smoothed channel             coded BER 0.00e+00  (< 3.0e-05 @95%)   post-eq SNR 26.55 ± 0.14 dB
+  NMSE  py vs gNB CE   -20.63 dB
+  NMSE  py vs genie    -23.72 dB
+  NMSE  gNB vs genie   -22.24 dB

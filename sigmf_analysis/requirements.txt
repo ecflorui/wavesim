@@ -1,0 +1,5 @@
+numpy>=1.24
+pandas>=2.0
+matplotlib>=3.7
+jupyter          # only for the notebook
+reportlab        # only to rebuild docs/SigMF_Task_Brief.pdf
