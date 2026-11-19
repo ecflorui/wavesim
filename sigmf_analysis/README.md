@@ -4,7 +4,7 @@ Offline Python tooling to load, check, understand and package the uplink PUSCH c
 the gNB and UE of the OAI testbed, as the input pipeline for a neural (AI-native) receiver.
 
 **Start with [`SigMF_walkthrough.ipynb`](SigMF_walkthrough.ipynb)**. It explains the data from scratch and
-runs every task. A short brief is in [`docs/SigMF_Task_Brief.pdf`](docs/SigMF_Task_Brief.pdf).
+runs every task. A short brief is in [`docs/SigMF_Task_Brief.pdf`](docs/SigMF_Task_Brief.pdf). **New to wireless or ML? Read [`docs/Beginners_Guide.pdf`](docs/Beginners_Guide.pdf) first.**
 
 ```bash
 pip install -r requirements.txt
