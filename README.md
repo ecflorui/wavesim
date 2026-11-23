@@ -23,4 +23,7 @@ Example configs live in `configs/`: `tiny_33`, `one_source_64`, `two_source_64`,
 
 Status of each piece: [docs/CPU.md](docs/CPU.md) (CPU baseline),
 [docs/TESTING.md](docs/TESTING.md) and [docs/RESULTS.md](docs/RESULTS.md) (runner, benchmark).
-`src/gpu_stub.cpp` is a placeholder until the CUDA solver lands.
+The CUDA baseline is in `src/gpu_solver.cu`; build it with `make gpu` on a CUDA
+machine. [docs/GPU.md](docs/GPU.md) documents Connor's standalone A100 checks,
+recorded timings, and the remaining integrated CPU/GPU benchmarks.
+`src/gpu_stub.cpp` is used only for CPU-only builds.
