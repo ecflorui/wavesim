@@ -1,1 +1,3 @@
 /tools/bench.sh text eol=lf
+/tools/check_cpu.sh text eol=lf
+*.cfg text eol=lf

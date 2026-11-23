@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WaveSim Live</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1f2328; --muted: #5b6472; --line: #dde2e8;
+    --accent: #2b6cb0; --warn: #b45309; --bad: #c0392b; --good: #1e7a3e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14181d; --panel: #1d232a; --ink: #e6e9ed; --muted: #9aa4b1; --line: #2d353f;
+            --accent: #6ea8ff; --warn: #f0a24b; --bad: #ff7a6b; --good: #5fd08a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  header { padding: 14px 20px 4px; }
+  h1 { font-size: 20px; margin: 0; }
+  header p { margin: 2px 0 0; color: var(--muted); }
+  main { display: grid; grid-template-columns: minmax(280px, 560px) minmax(260px, 340px);
+         gap: 16px; padding: 12px 20px 20px; align-items: start; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  #view { width: 100%; aspect-ratio: 1; image-rendering: pixelated; border-radius: 6px;
+          border: 1px solid var(--line); cursor: crosshair; display: block; background: #fff; }
+  .legend { display: flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 12px; }
+  .legend .bar { flex: 1; height: 10px; border-radius: 3px;
+                 background: linear-gradient(90deg, #00004d, #0000ff, #ffffff, #ff0000, #800000); }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .stat b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 600; font-size: 12px;
+           border: 1px solid currentColor; }
+  .run { color: var(--good); } .pause { color: var(--muted); } .bad { color: var(--bad); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 14px 0 6px; }
+  h2:first-child { margin-top: 0; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  label { color: var(--muted); }
+  button, select, input[type=number] {
+    font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 10px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.on { outline: 2px solid var(--accent); }
+  input[type=range] { flex: 1; min-width: 120px; }
+  input[type=number] { width: 84px; }
+  .val { font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+  .note { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
+  .warn { color: var(--warn); font-size: 12px; margin: 4px 0 0; }
+  #chart { width: 100%; height: 120px; display: block; }
+  #msg { min-height: 18px; color: var(--bad); font-size: 12px; }
+  ul.src { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>WaveSim Live <span id="badge" class="badge pause">Paused</span></h1>
+  <p>The C++ CPU solver running live. You are looking at one flat slice through the 3D box.</p>
+</header>
+<main>
+  <section class="panel">
+    <canvas id="view" width="64" height="64" aria-label="pressure slice"></canvas>
+    <div class="legend"><span id="lo">−</span><div class="bar"></div><span id="hi">+</span></div>
+    <p class="note">Blue = air stretched (negative pressure), white = 0, red = squeezed (positive).
+      Click the picture to add a source at that cell.</p>
+    <div class="stats">
+      <div class="stat"><b id="step">0</b><span>step</span></div>
+      <div class="stat"><b id="time">0</b><span>simulated ms</span></div>
+      <div class="stat"><b id="max">0</b><span>max |p| (3D)</span></div>
+      <div class="stat"><b id="speed">–</b><span>ms per step</span></div>
+    </div>
+    <h2 style="margin-top:16px">max |p| over time (log scale)</h2>
+    <canvas id="chart" width="560" height="120"></canvas>
+  </section>
+
+  <section class="panel">
+    <h2>Run</h2>
+    <div class="row">
+      <button id="play" class="primary">Play</button>
+      <button id="stepbtn">Step</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="row"><label for="spf">Steps per frame</label>
+      <input id="spf" type="range" min="1" max="20" value="2"><span class="val" id="spfv">2</span></div>
+
+    <h2>Grid and stability</h2>
+    <div class="row"><label for="grid">Grid</label>
+      <select id="grid"><option>33</option><option>48</option><option selected>64</option>
+        <option>96</option><option>128</option></select><span class="note">points per side</span></div>
+    <div class="row"><label for="cfl">CFL</label>
+      <input id="cfl" type="range" min="0.1" max="0.7" step="0.01" value="0.5"><span class="val" id="cflv">0.50</span></div>
+    <p class="note">How many cells the wave moves per step. Stable up to 1/√3 ≈ 0.577.</p>
+    <p class="warn" id="cflwarn" hidden>Above 0.577: this run will blow up. Try it to see why the limit exists.</p>
+
+    <h2>View</h2>
+    <div class="row" role="group" aria-label="slice axis">
+      <label>Slice</label>
+      <button data-axis="x">x</button><button data-axis="y">y</button><button data-axis="z" class="on">z</button>
+    </div>
+    <div class="row"><label for="idx">Position</label>
+      <input id="idx" type="range" min="0" max="63" value="32"><span class="val" id="idxv">32</span></div>
+    <div class="row"><label for="scale">Colour scale</label>
+      <select id="scale"><option value="auto">auto (this frame)</option><option value="fixed">fixed</option></select>
+      <input id="fixed" type="number" value="0.05" step="0.01" min="0.0001" hidden></div>
+
+    <h2>Sources</h2>
+    <div class="row"><label for="stype">New source</label>
+      <select id="stype"><option value="ricker">Ricker pulse</option><option value="sine">Sine tone</option></select></div>
+    <div class="row"><label for="freq">Hz</label><input id="freq" type="number" value="2000" min="1" step="100">
+      <label for="amp">amp</label><input id="amp" type="number" value="1" step="0.1"></div>
+    <div class="row"><button id="clear">Remove all sources</button></div>
+    <ul class="src" id="srclist"></ul>
+    <div id="msg"></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const view = $("view"), vctx = view.getContext("2d");
+const chart = $("chart"), cctx = chart.getContext("2d");
+let axis = "z", index = 32, last = null, inFlight = false, n = 64;
+
+async function cmd(body) {
+  const r = await fetch("/cmd", { method: "POST", body: JSON.stringify(body) });
+  const j = await r.json();
+  $("msg").textContent = j.error || "";
+  return j;
+}
+
+// blue -> white -> red, matching matplotlib "seismic"
+function colour(t) {                // t in [-1, 1]
+  t = Math.max(-1, Math.min(1, t));
+  if (t < 0) {
+    const u = -t;                   // 0 white .. 1 dark blue
+    return u < 0.5 ? [255 * (1 - 2 * u), 255 * (1 - 2 * u), 255]
+                   : [0, 0, 255 * (1 - (u - 0.5) * 1.4)];
+  }
+  return t < 0.5 ? [255, 255 * (1 - 2 * t), 255 * (1 - 2 * t)]
+                 : [255 * (1 - (t - 0.5)), 0, 0];
+}
+
+function draw(s) {
+  const bytes = Uint8Array.from(atob(s.slice), (c) => c.charCodeAt(0));
+  const data = new Float32Array(bytes.buffer);
+  const w = s.n, h = s.n;
+  if (view.width !== w) { view.width = w; view.height = h; }
+  let m = 0;
+  for (const v of data) if (Number.isFinite(v)) m = Math.max(m, Math.abs(v));
+  const range = $("scale").value === "fixed" ? Math.max(1e-6, +$("fixed").value) : Math.max(m, 1e-6);
+  const img = vctx.createImageData(w, h);
+  for (let row = 0; row < h; row++) {
+    for (let col = 0; col < w; col++) {
+      const v = data[row * w + col];
+      const [r, g, b] = Number.isFinite(v) ? colour(v / range) : [40, 40, 40];
+      const p = ((h - 1 - row) * w + col) * 4;        // row 0 at the bottom
+      img.data[p] = r; img.data[p + 1] = g; img.data[p + 2] = b; img.data[p + 3] = 255;
+    }
+  }
+  vctx.putImageData(img, 0, 0);
+  $("lo").textContent = "−" + range.toPrecision(2);
+  $("hi").textContent = "+" + range.toPrecision(2);
+}
+
+function drawChart(hist) {
+  const W = chart.width = chart.clientWidth * devicePixelRatio, H = chart.height = 120 * devicePixelRatio;
+  const css = getComputedStyle(document.documentElement);
+  cctx.clearRect(0, 0, W, H);
+  const pts = hist.filter((p) => p[1] && p[1] > 0);
+  if (pts.length < 2) return;
+  const x0 = hist[0][0], x1 = Math.max(hist[hist.length - 1][0], x0 + 1);
+  const ys = pts.map((p) => Math.log10(p[1]));
+  const lo = Math.min(-4, ...ys), hi = Math.max(0, ...ys);
+  const X = (s) => ((s - x0) / (x1 - x0)) * (W - 10) + 5;
+  const Y = (v) => H - 6 - ((v - lo) / (hi - lo)) * (H - 12);
+  cctx.strokeStyle = css.getPropertyValue("--line"); cctx.lineWidth = 1;
+  for (let d = Math.ceil(lo); d <= hi; d += 2) { cctx.beginPath(); cctx.moveTo(0, Y(d)); cctx.lineTo(W, Y(d)); cctx.stroke(); }
+  cctx.strokeStyle = css.getPropertyValue("--accent"); cctx.lineWidth = 2 * devicePixelRatio;
+  cctx.beginPath();
+  pts.forEach((p, i) => (i ? cctx.lineTo : cctx.moveTo).call(cctx, X(p[0]), Y(Math.log10(p[1]))));
+  cctx.stroke();
+  cctx.fillStyle = css.getPropertyValue("--muted"); cctx.font = `${11 * devicePixelRatio}px system-ui`;
+  cctx.fillText(`10^${hi.toFixed(0)}`, 6, 14 * devicePixelRatio);
+  cctx.fillText(`10^${lo.toFixed(0)}`, 6, H - 8);
+}
+
+function update(s) {
+  last = s; n = s.n;
+  draw(s);
+  $("step").textContent = s.step;
+  $("time").textContent = s.time_ms.toFixed(3);
+  $("max").textContent = s.max_abs == null ? "∞ / NaN" : s.max_abs.toPrecision(4);
+  $("speed").textContent = s.ms_per_step ? s.ms_per_step.toFixed(2) : "–";
+  const badge = $("badge");
+  if (s.blew_up) { badge.textContent = "Blew up"; badge.className = "badge bad"; }
+  else if (s.playing) { badge.textContent = "Running"; badge.className = "badge run"; }
+  else { badge.textContent = "Paused"; badge.className = "badge pause"; }
+  $("play").textContent = s.playing ? "Pause" : (s.blew_up ? "Restart" : "Play");
+  $("idx").max = s.n - 1;
+  if (+$("idx").value !== s.index) { $("idx").value = s.index; $("idxv").textContent = s.index; index = s.index; }
+  $("cflwarn").hidden = s.cfl <= s.stable_cfl;
+  $("srclist").innerHTML = s.sources.length
+    ? s.sources.map((x) => `<li>(${x.i}, ${x.j}, ${x.k}) ${x.type ? "sine" : "Ricker"} ${x.freq} Hz, amp ${x.amp}</li>`).join("")
+    : "<li>none: the box stays silent</li>";
+  drawChart(s.history);
+}
+
+async function poll() {
+  if (!inFlight) {
+    inFlight = true;
+    try {
+      const r = await fetch(`/state?axis=${axis}&index=${index}`);
+      update(await r.json());
+    } catch (e) { $("msg").textContent = "lost connection to live_gui.py"; }
+    inFlight = false;
+  }
+  requestAnimationFrame(poll);
+}
+
+$("play").onclick = () => cmd({ op: last && last.playing ? "pause" : "play" });
+$("stepbtn").onclick = () => cmd({ op: "step", count: 1 });
+$("reset").onclick = () => cmd({ op: "reset" });
+$("clear").onclick = () => cmd({ op: "clear" });
+$("spf").oninput = (e) => { $("spfv").textContent = e.target.value; cmd({ op: "speed", value: +e.target.value }); };
+$("grid").onchange = (e) => { index = -1; cmd({ op: "grid", n: +e.target.value }); };
+$("cfl").oninput = (e) => { $("cflv").textContent = (+e.target.value).toFixed(2); };
+$("cfl").onchange = (e) => cmd({ op: "cfl", value: +e.target.value });
+$("idx").oninput = (e) => { index = +e.target.value; $("idxv").textContent = index; };
+$("scale").onchange = (e) => { $("fixed").hidden = e.target.value !== "fixed"; };
+document.querySelectorAll("[data-axis]").forEach((b) => b.onclick = () => {
+  axis = b.dataset.axis;
+  document.querySelectorAll("[data-axis]").forEach((x) => x.classList.toggle("on", x === b));
+});
+view.onclick = (e) => {
+  const r = view.getBoundingClientRect();
+  const a = Math.floor(((e.clientX - r.left) / r.width) * n);
+  const b = n - 1 - Math.floor(((e.clientY - r.top) / r.height) * n);   // row 0 at the bottom
+  cmd({ op: "add_source", axis, index, a, b, type: $("stype").value, freq: +$("freq").value, amp: +$("amp").value });
+};
+poll();
+</script>
+</body>
+</html>

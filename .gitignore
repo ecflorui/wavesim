@@ -6,3 +6,4 @@ wavesim
 test_cpu
 *.o
 __pycache__/
+*.so
