@@ -17,9 +17,7 @@ sources, symmetry, stability at CFL 0.5, instability at CFL 0.6, and the
 
 ## CPU runner and output smoke test
 
-While the config loader is still a stub, it ignores the config path and uses
-the built-in `tiny_33` case. After the real parser lands, these commands
-require `configs/tiny_33.cfg`.
+These commands use `configs/tiny_33.cfg`, which saves a slice every 40 steps.
 
 ```bash
 ./wavesim configs/tiny_33.cfg --backend cpu --steps 10
@@ -41,8 +39,8 @@ final host copy, and total. The self-comparison should print
 
 ## Snapshots with a real config
 
-Once the real configs land, run a CPU case with `snapshot_every` set to a
-positive interval. Check for `slice_<axis>_<step>.bin` at each exact multiple
+Run a CPU case with `snapshot_every` set to a positive interval (for
+example `configs/one_source_64.cfg`, every 50 steps). Check for `slice_<axis>_<step>.bin` at each exact multiple
 of the interval through the final step. `final.bin` holds the last step.
 Intermediate snapshot copies and file writes are outside the timing totals.
 
@@ -69,3 +67,10 @@ The comparator uses the CPU field as the reference. A comparison passes when
 the grid shapes match, both fields contain finite values, the CPU L2 norm is
 nonzero, and the relative L2 error is strictly below `0.01`. The comparator
 also reports the maximum absolute difference and exits with status 0 on PASS.
+
+## Everything at once
+
+`make check` runs the CPU unit checks, the hybrid split check and every
+reference config end to end. On a GPU node, `python3 tools/run_results.py`
+(or `sbatch tools/results.slurm` from a login node) runs the CPU, GPU and
+hybrid comparisons plus all timings and fills in [RESULTS.md](RESULTS.md).

@@ -141,7 +141,7 @@ class Sim:
             "max_abs": m if math.isfinite(m) else None,
             "ms_per_step": self.ms_per_step,
             "playing": self.playing, "blew_up": self.blew_up,
-            "cfl": self.cfl, "stable_cfl": STABLE_CFL,
+            "cfl": self.cfl, "stable_cfl": STABLE_CFL, "dt_us": self.lib.ws_dt(self.h) * 1e6,
             "steps_per_frame": self.steps_per_frame,
             "sources": self.sources, "history": self.history,
         }
@@ -168,6 +168,24 @@ class Sim:
         elif op == "cfl":
             self.cfl = max(0.05, min(0.75, float(cmd["value"])))
             self.rebuild()
+        elif op == "preset":
+            n, m = self.n, self.n // 2
+            q = max(1, n // 5)
+            presets = {
+                "one":    [dict(i=m, j=m, k=m, type=0, freq=2000.0, amp=1.0)],
+                "two":    [dict(i=m - q, j=m, k=m, type=0, freq=2000.0, amp=1.0),
+                           dict(i=m + q, j=m, k=m, type=0, freq=2000.0, amp=1.0)],
+                "sine":   [dict(i=m, j=m, k=m, type=1, freq=1000.0, amp=0.05)],
+                "corner": [dict(i=q, j=q, k=m, type=0, freq=2000.0, amp=1.0)],
+            }
+            if cmd.get("name") not in presets:
+                return {"error": "unknown preset"}
+            self.sources = []
+            self.lib.ws_clear_sources(self.h)
+            for src in presets[cmd["name"]]:
+                self._add(src)
+            self.reset()
+            self.playing = True
         elif op == "clear":
             self.sources = []
             self.lib.ws_clear_sources(self.h)

@@ -7,3 +7,5 @@ test_cpu
 *.o
 __pycache__/
 *.so
+test_hybrid
+!docs/img/*.png

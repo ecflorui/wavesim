@@ -23,8 +23,13 @@
          gap: 16px; padding: 12px 20px 20px; align-items: start; }
   @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
-  #view { width: 100%; aspect-ratio: 1; image-rendering: pixelated; border-radius: 6px;
-          border: 1px solid var(--line); cursor: crosshair; display: block; background: #fff; }
+  .viewwrap { position: relative; }
+  #view { width: 100%; aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--line);
+          cursor: crosshair; display: block; background: #fff; }
+  #view.cells { image-rendering: pixelated; }
+  #overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .info { color: var(--muted); font-size: 12px; margin: 6px 0 0; font-variant-numeric: tabular-nums; }
+  .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .legend { display: flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 12px; }
   .legend .bar { flex: 1; height: 10px; border-radius: 3px;
                  background: linear-gradient(90deg, #00004d, #0000ff, #ffffff, #ff0000, #800000); }
@@ -61,7 +66,11 @@
 </header>
 <main>
   <section class="panel">
-    <canvas id="view" width="64" height="64" aria-label="pressure slice"></canvas>
+    <div class="viewwrap">
+      <canvas id="view" width="64" height="64" aria-label="pressure slice"></canvas>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+    </div>
+    <p class="info" id="info"></p>
     <div class="legend"><span id="lo">−</span><div class="bar"></div><span id="hi">+</span></div>
     <p class="note">Blue = air stretched (negative pressure), white = 0, red = squeezed (positive).
       Click the picture to add a source at that cell.</p>
@@ -76,6 +85,14 @@
   </section>
 
   <section class="panel">
+    <h2>Try a scene</h2>
+    <div class="presets">
+      <button data-preset="one">One pulse</button>
+      <button data-preset="two">Two pulses</button>
+      <button data-preset="sine">Sine tone</button>
+      <button data-preset="corner">Off-centre pulse</button>
+    </div>
+
     <h2>Run</h2>
     <div class="row">
       <button id="play" class="primary">Play</button>
@@ -104,6 +121,7 @@
     <div class="row"><label for="scale">Colour scale</label>
       <select id="scale"><option value="auto">auto (this frame)</option><option value="fixed">fixed</option></select>
       <input id="fixed" type="number" value="0.05" step="0.01" min="0.0001" hidden></div>
+    <div class="row"><label><input id="cells" type="checkbox"> show grid cells</label></div>
 
     <h2>Sources</h2>
     <div class="row"><label for="stype">New source</label>
@@ -164,25 +182,47 @@ function draw(s) {
 }
 
 function drawChart(hist) {
-  const W = chart.width = chart.clientWidth * devicePixelRatio, H = chart.height = 120 * devicePixelRatio;
+  const dpr = devicePixelRatio;
+  const W = chart.width = chart.clientWidth * dpr, H = chart.height = 120 * dpr;
   const css = getComputedStyle(document.documentElement);
   cctx.clearRect(0, 0, W, H);
   const pts = hist.filter((p) => p[1] && p[1] > 0);
   if (pts.length < 2) return;
   const x0 = hist[0][0], x1 = Math.max(hist[hist.length - 1][0], x0 + 1);
   const ys = pts.map((p) => Math.log10(p[1]));
-  const lo = Math.min(-4, ...ys), hi = Math.max(0, ...ys);
-  const X = (s) => ((s - x0) / (x1 - x0)) * (W - 10) + 5;
-  const Y = (v) => H - 6 - ((v - lo) / (hi - lo)) * (H - 12);
-  cctx.strokeStyle = css.getPropertyValue("--line"); cctx.lineWidth = 1;
-  for (let d = Math.ceil(lo); d <= hi; d += 2) { cctx.beginPath(); cctx.moveTo(0, Y(d)); cctx.lineTo(W, Y(d)); cctx.stroke(); }
-  cctx.strokeStyle = css.getPropertyValue("--accent"); cctx.lineWidth = 2 * devicePixelRatio;
+  const lo = Math.floor(Math.min(-4, ...ys)), hi = Math.ceil(Math.max(0, ...ys));
+  const left = 44 * dpr, pad = 8 * dpr;
+  const X = (s) => left + ((s - x0) / (x1 - x0)) * (W - left - pad);
+  const Y = (v) => H - pad - ((v - lo) / (hi - lo)) * (H - 2 * pad);
+  const stepD = Math.max(1, Math.ceil((hi - lo) / 4));
+  cctx.font = `${11 * dpr}px system-ui`; cctx.textBaseline = "middle"; cctx.textAlign = "right";
+  for (let d = lo; d <= hi; d += stepD) {
+    cctx.strokeStyle = css.getPropertyValue("--line"); cctx.lineWidth = 1;
+    cctx.beginPath(); cctx.moveTo(left, Y(d)); cctx.lineTo(W - pad, Y(d)); cctx.stroke();
+    cctx.fillStyle = css.getPropertyValue("--muted");
+    cctx.fillText(d === 0 ? "1" : `1e${d}`, left - 6 * dpr, Y(d));
+  }
+  cctx.strokeStyle = css.getPropertyValue("--accent"); cctx.lineWidth = 2 * dpr; cctx.lineJoin = "round";
   cctx.beginPath();
   pts.forEach((p, i) => (i ? cctx.lineTo : cctx.moveTo).call(cctx, X(p[0]), Y(Math.log10(p[1]))));
   cctx.stroke();
-  cctx.fillStyle = css.getPropertyValue("--muted"); cctx.font = `${11 * devicePixelRatio}px system-ui`;
-  cctx.fillText(`10^${hi.toFixed(0)}`, 6, 14 * devicePixelRatio);
-  cctx.fillText(`10^${lo.toFixed(0)}`, 6, H - 8);
+}
+
+function drawOverlay(s) {
+  const ov = $("overlay"), dpr = devicePixelRatio;
+  const W = ov.width = ov.clientWidth * dpr, H = ov.height = ov.clientHeight * dpr;
+  const o = ov.getContext("2d");
+  o.clearRect(0, 0, W, H);
+  const cell = W / s.n;
+  for (const src of s.sources) {
+    const onPlane = { z: src.k, y: src.j, x: src.i }[s.axis] === s.index;
+    const [a, b] = { z: [src.i, src.j], y: [src.i, src.k], x: [src.j, src.k] }[s.axis];
+    const cx = (a + 0.5) * cell, cy = H - (b + 0.5) * cell;
+    o.lineWidth = 2 * dpr;
+    o.strokeStyle = "rgba(20, 20, 20, 0.85)";
+    o.setLineDash(onPlane ? [] : [4 * dpr, 3 * dpr]);
+    o.beginPath(); o.arc(cx, cy, Math.max(7 * dpr, cell * 0.9), 0, 2 * Math.PI); o.stroke();
+  }
 }
 
 function update(s) {
@@ -204,6 +244,8 @@ function update(s) {
     ? s.sources.map((x) => `<li>(${x.i}, ${x.j}, ${x.k}) ${x.type ? "sine" : "Ricker"} ${x.freq} Hz, amp ${x.amp}</li>`).join("")
     : "<li>none: the box stays silent</li>";
   drawChart(s.history);
+  drawOverlay(s);
+  $("info").textContent = `grid ${s.n}³ (${(s.n ** 3 / 1e6).toFixed(2)} M cells) · CFL ${s.cfl.toFixed(2)} · dt ${s.dt_us.toFixed(1)} µs · slice ${s.axis} = ${s.index} · rings mark sources (dashed = off this slice)`;
 }
 
 async function poll() {
@@ -238,6 +280,8 @@ view.onclick = (e) => {
   const b = n - 1 - Math.floor(((e.clientY - r.top) / r.height) * n);   // row 0 at the bottom
   cmd({ op: "add_source", axis, index, a, b, type: $("stype").value, freq: +$("freq").value, amp: +$("amp").value });
 };
+document.querySelectorAll("[data-preset]").forEach((b) => b.onclick = () => cmd({ op: "preset", name: b.dataset.preset }));
+$("cells").onchange = (e) => view.classList.toggle("cells", e.target.checked);
 poll();
 </script>
 </body>

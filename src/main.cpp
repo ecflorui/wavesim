@@ -1,6 +1,7 @@
 #include "config.hpp"
 #include "solver.hpp"
 #include "output.hpp"
+#include "hybrid.hpp"
 #include <algorithm>
 #include <charconv>
 #include <chrono>
@@ -43,16 +44,17 @@ void clear_old_slices(const std::string& dir) {
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::fprintf(stderr, "usage: %s <config.cfg> [--backend cpu|gpu] [--steps N]\n", argv[0]);
+        std::fprintf(stderr, "usage: %s <config.cfg> [--backend cpu|gpu|hybrid] [--steps N] [--cpu-layers N]\n", argv[0]);
         return 2;
     }
 
     try {
         std::string_view backend = "cpu";
         int steps_override = 0;
+        int cpu_layers = 2;   // hybrid only: z-layers the CPU owns
         for (int a = 2; a < argc; ++a) {
             const std::string_view option = argv[a];
-            if (option != "--backend" && option != "--steps") {
+            if (option != "--backend" && option != "--steps" && option != "--cpu-layers") {
                 throw std::runtime_error("unknown option: " + std::string(option));
             }
             if (++a == argc) {
@@ -60,9 +62,11 @@ int main(int argc, char** argv) {
             }
             if (option == "--backend") {
                 backend = argv[a];
-                if (backend != "cpu" && backend != "gpu") {
-                    throw std::runtime_error("--backend requires cpu or gpu");
+                if (backend != "cpu" && backend != "gpu" && backend != "hybrid") {
+                    throw std::runtime_error("--backend requires cpu, gpu or hybrid");
                 }
+            } else if (option == "--cpu-layers") {
+                cpu_layers = parse_steps(argv[a]);
             } else {
                 steps_override = parse_steps(argv[a]);
             }
@@ -75,7 +79,12 @@ int main(int argc, char** argv) {
         print_config(cfg);
 
         auto start = Clock::now();
-        auto solver = backend == "gpu" ? make_gpu_solver() : make_cpu_solver();
+        auto solver = backend == "gpu"      ? make_gpu_solver()
+                    : backend == "hybrid"   ? make_hybrid_solver(cpu_layers)
+                                            : make_cpu_solver();
+        if (backend == "hybrid")
+            std::printf("hybrid    CPU owns z-layers 1..%d, GPU owns %d..%d\n",
+                        cpu_layers, cpu_layers + 1, cfg.nz - 2);
         solver->init(cfg);
         solver->sync();
         const double init_ms = elapsed_ms(start);
