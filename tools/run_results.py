@@ -82,6 +82,10 @@ def make_cfg(n, steps=1000):
     return os.path.relpath(path, ROOT)
 
 
+def fmt_x(v):
+    return f"{v:.2f}x" if v < 1 else f"{v:.1f}x"
+
+
 def fmt_err(e):
     return "-" if e is None else f"{e:.2e}"
 
@@ -141,8 +145,8 @@ def main():
                           f"{g['max']:.5f}", f"{verdict_g} ({fmt_err(err_g)})",
                           f"{verdict_h} ({fmt_err(err_h)})"])
         speed_rows.append([f"`{name}`", f"{cpu['total']:.1f}", f"{g['total']:.1f}",
-                           f"{cpu['total'] / g['total']:.1f}x", f"{cpu['steps']:.1f}", f"{g['steps']:.1f}",
-                           f"{cpu['steps'] / g['steps']:.1f}x", f"{g['init']:.1f}",
+                           fmt_x(cpu['total'] / g['total']), f"{cpu['steps']:.1f}", f"{g['steps']:.1f}",
+                           fmt_x(cpu['steps'] / g['steps']), f"{g['init']:.1f}",
                            f"{h['total']:.1f}" if h else "-"])
         for backend, r in (("cpu", cpu), ("gpu", g), ("hybrid", h)):
             if r:
@@ -160,7 +164,7 @@ def main():
         verdict, err, _ = compare(cpu["dir"], g["dir"])
         cells = n ** 3
         scale_rows.append([f"{n}³", f"{cells / 1e6:.2f} M", f"{cpu['total']:.0f}", f"{g['total']:.0f}",
-                           f"{cpu['total'] / g['total']:.1f}x", f"{cpu['steps'] / g['steps']:.1f}x",
+                           fmt_x(cpu['total'] / g['total']), fmt_x(cpu['steps'] / g['steps']),
                            f"{cells * 1000 / (g['steps'] / 1e3) / 1e9:.1f}",
                            f"{verdict} ({fmt_err(err)})"])
         for backend, r in (("cpu", cpu), ("gpu", g)):

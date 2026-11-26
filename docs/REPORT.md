@@ -59,23 +59,36 @@ order so both round alike.
   reference peaks match to 4 digits through the real program.
 - **Hybrid split logic:** with two CPU slabs, the split reproduces the CPU
   solver bit for bit for every split position tested.
-- **GPU and hybrid against CPU:** **[fill in from RESULTS.md, correctness table]**.
-  Connor's standalone check before integration gave relative L2 errors of
-  about 1e-6.
+- **GPU and hybrid against CPU** (Lonestar6, A100, Nov 26): every config
+  passes with relative L2 error between 9e-7 and 2.6e-6, against a limit of
+  1e-2. See [RESULTS.md](RESULTS.md).
 
 ## 5. Performance
 
-**[fill in from RESULTS.md: speed-up table, scaling table, hybrid table]**
+All runs on one Lonestar6 A100 node, CPU pinned to one core, median of 3
+(full tables in [RESULTS.md](RESULTS.md)).
 
-Points to discuss:
-- Total vs stepping-only speed-up. The standalone GPU run spent 484 ms of
-  520 ms on initialization (mostly CUDA start-up) and 33 ms stepping, so the
-  answer to "5× faster" depends on whether start-up counts. The proposal
-  defined timing to include setup. **[fill in: the measured numbers and the
-  instructors' answer]**
-- How the speed-up grows with grid size (GPU start-up is a fixed cost).
-- Why the hybrid split does not help: one CPU core is about 100× slower per
-  layer than the A100, and swapping layers costs about as much as a GPU step.
+| Grid (1,000 steps) | CPU total | GPU total | Speed-up (total) | Speed-up (steps only) |
+|---|---:|---:|---:|---:|
+| 64³ | 331 ms | 468 ms | 0.7× | 27× |
+| 128³ | 2,819 ms | 495 ms | **5.7×** | 85× |
+| 192³ | 9,671 ms | 548 ms | 17.6× | 101× |
+| 256³ | 25,119 ms | 575 ms | 43.7× | 143× |
+
+- **The 5× target is met at 128³ (5.7×)** with timing that includes setup and
+  the final copy, as the proposal defined it.
+- **Start-up is the serial fraction.** GPU initialization (about 0.46 s,
+  mostly CUDA context creation) is 93% of the GPU's time at 128³ and does not
+  shrink with the problem. As in Amdahl's law, it caps small runs (64³ is
+  slower on the GPU) and matters less as the grid grows.
+- **The GPU also gets more efficient with size:** 21 billion cell updates per
+  second at 64³, 96 billion at 256³, because larger grids keep more of the
+  GPU busy.
+- **Hybrid:** correct for every split, but slower than the GPU alone: 33 ms
+  of stepping on the GPU alone, 71 ms with one CPU layer, 402 ms with 16. One
+  core is about 85× slower than the A100 per layer, and the two sides wait
+  for each other every step. **[fill in: whether the instructors required the
+  hybrid to be faster]**
 
 ## 6. Visualisation
 
